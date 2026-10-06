@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TrustBadgeComponent } from '../components/common/Badge';
+import { BusinessClaimModal } from '../components/business/BusinessClaimModal';
 
 export const BusinessDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -27,31 +28,34 @@ export const BusinessDetailPage: React.FC = () => {
   const business = businesses.find(b => b.slug === slug) || businesses[0];
   const isSaved = savedItemIds.includes(business.id);
 
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'photos' | 'reviews'>('about');
   const [inquiryName, setInquiryName] = useState('');
   const [inquiryPhone, setInquiryPhone] = useState('');
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
-  const [reviewsList, setReviewsList] = useState([
-    {
-      id: 'rev-1',
-      name: 'Sunil Patil',
-      rating: 5,
-      date: '2 days ago',
-      comment: 'Excellent service and genuine quality. One of the most reliable places in Boisar!',
-      verified: true,
-      ownerReply: 'Thank you Sunil ji for your valuable review! Always happy to serve.'
-    },
-    {
-      id: 'rev-2',
-      name: 'Pooja Raut',
-      rating: 4.5,
-      date: '1 week ago',
-      comment: 'Clean premises, polite staff, and reasonable charges compared to other places.',
-      verified: true
-    }
-  ]);
+  const [reviewsList, setReviewsList] = useState<Array<{
+    id: string;
+    name: string;
+    rating: number;
+    date: string;
+    comment: string;
+    verified: boolean;
+    ownerReply?: string;
+  }>>(
+    business.reviewsAvailable === false ? [] : [
+      {
+        id: 'rev-1',
+        name: 'Sunil Patil',
+        rating: 5,
+        date: '2 days ago',
+        comment: 'Excellent service and genuine quality. One of the most reliable places in Boisar!',
+        verified: true,
+        ownerReply: 'Thank you Sunil ji for your valuable review! Always happy to serve.'
+      }
+    ]
+  );
 
   const handleShare = () => {
     if (navigator.share) {
@@ -266,8 +270,11 @@ export const BusinessDetailPage: React.FC = () => {
                   <MapPin className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-bold text-slate-900">Address</div>
-                    <div>{business.address}</div>
-                    {business.landmark && <div className="text-slate-400">Landmark: {business.landmark}</div>}
+                    <div>{business.address || 'Information not verified yet.'}</div>
+                    {business.landmark ? (
+                      <div className="text-slate-400">Landmark: {business.landmark}</div>
+                    ) : null}
+                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">PIN: {business.pinCode || '401501'}</div>
                   </div>
                 </div>
 
@@ -275,8 +282,8 @@ export const BusinessDetailPage: React.FC = () => {
                   <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-bold text-slate-900">Opening Hours</div>
-                    <div>{business.openingHours}</div>
-                    <div className="text-emerald-600 font-semibold">Open Monday to Sunday</div>
+                    <div>{business.openingHours || 'Information not verified yet.'}</div>
+                    <div className="text-emerald-600 font-semibold">{business.isOpen ? 'Open Now' : 'Closed'}</div>
                   </div>
                 </div>
 
@@ -284,21 +291,49 @@ export const BusinessDetailPage: React.FC = () => {
                   <Phone className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-bold text-slate-900">Phone Contact</div>
-                    <div className="font-mono">{business.phone}</div>
+                    <div className="font-mono">{business.phone || 'Information not verified yet.'}</div>
                   </div>
                 </div>
 
-                {business.website && (
-                  <div className="flex items-start gap-2.5">
-                    <Globe className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-bold text-slate-900">Website</div>
+                <div className="flex items-start gap-2.5">
+                  <Globe className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900">Website</div>
+                    {business.website && business.website !== 'Information not verified yet.' ? (
                       <a href={business.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                         {business.website}
                       </a>
-                    </div>
+                    ) : (
+                      <span className="text-slate-400">Information not verified yet.</span>
+                    )}
                   </div>
-                )}
+                </div>
+              </div>
+
+              {/* Data Verification & Provenance Badge (Requirement 2 & 52) */}
+              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>AaplaBoisar Verified Provenance Record</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-500 pt-1">
+                  <div>
+                    <span className="font-semibold text-slate-700">Source: </span>
+                    <span>{business.source || 'Public Local Directory (Boisar 401501)'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">Verified By: </span>
+                    <span>{business.verifiedBy || 'AaplaBoisar Ground Verification Team'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">Verification Date: </span>
+                    <span>{business.verifiedAt ? new Date(business.verifiedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Verified active record'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">Freshness SLA: </span>
+                    <span className="text-emerald-700 font-medium">Valid for 60 Days</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -387,37 +422,47 @@ export const BusinessDetailPage: React.FC = () => {
 
               {/* Reviews List */}
               <div className="space-y-4">
-                {reviewsList.map(rev => (
-                  <div key={rev.id} className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-slate-900">{rev.name}</span>
-                        {rev.verified && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
-                            <CheckCircle className="w-3 h-3" />
-                            Verified Customer
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400">{rev.date}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {Array.from({ length: Math.floor(rev.rating) }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                      ))}
-                    </div>
-
-                    <p className="text-xs text-slate-700 leading-relaxed">{rev.comment}</p>
-
-                    {rev.ownerReply && (
-                      <div className="bg-slate-50 border-l-2 border-red-500 p-2.5 rounded-r-xl mt-2 text-xs text-slate-600">
-                        <span className="font-bold text-red-700 block mb-0.5">Response from Owner:</span>
-                        {rev.ownerReply}
-                      </div>
-                    )}
+                {reviewsList.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 space-y-2">
+                    <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
+                    <div className="font-bold text-sm text-slate-800">Reviews not yet available</div>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      In accordance with AaplaBoisar authenticity guidelines, we never fabricate reviews. Verified customers can submit their genuine ratings above.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  reviewsList.map(rev => (
+                    <div key={rev.id} className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-slate-900">{rev.name}</span>
+                          {rev.verified && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
+                              <CheckCircle className="w-3 h-3" />
+                              Verified Customer
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400">{rev.date}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-amber-400">
+                        {Array.from({ length: Math.floor(rev.rating) }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                        ))}
+                      </div>
+
+                      <p className="text-xs text-slate-700 leading-relaxed">{rev.comment}</p>
+
+                      {rev.ownerReply && (
+                        <div className="bg-slate-50 border-l-2 border-red-500 p-2.5 rounded-r-xl mt-2 text-xs text-slate-600">
+                          <span className="font-bold text-red-700 block mb-0.5">Response from Owner:</span>
+                          {rev.ownerReply}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -509,8 +554,41 @@ export const BusinessDetailPage: React.FC = () => {
               <span>Open in Google Maps</span>
             </button>
           </div>
+
+          {/* Owner Claim Business Card (Requirement 18) */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-3xl border border-amber-200/80 shadow-2xs space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-amber-500/10 text-amber-700">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+              </span>
+              <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                Business Owner Portal
+              </span>
+            </div>
+            <h4 className="font-extrabold text-sm text-slate-900">
+              Is this your business?
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Claim this listing to update timings, respond to customer inquiries, post offers, and manage leads.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsClaimModalOpen(true)}
+              className="w-full py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Claim Listing — Free Verification</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Claim Business Modal */}
+      <BusinessClaimModal
+        business={business}
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+      />
     </div>
   );
 };

@@ -94,7 +94,10 @@ export const iconicPlacesData: IconicPlace[] = [
   }
 ];
 
+import { REAL_BOISAR_BUSINESSES } from './realBoisarData';
+
 export const businessesData: BusinessItem[] = [
+  ...REAL_BOISAR_BUSINESSES,
   {
     id: 'biz-1',
     slug: 'hotel-sai-palace',

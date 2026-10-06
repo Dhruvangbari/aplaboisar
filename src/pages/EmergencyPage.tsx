@@ -20,6 +20,12 @@ export const EmergencyPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-rose-50/50 py-6 pb-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+        {/* Mandatory Official Emergency Disclaimer (Requirement 28) */}
+        <div className="p-4 bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-2xl flex items-center gap-3 border-2 border-amber-600 shadow-md">
+          <AlertTriangle className="w-5 h-5 text-slate-950 shrink-0" />
+          <span>Always verify emergency contact information. For immediate emergencies in India, call 112.</span>
+        </div>
+
         {/* Top Emergency Flash Header */}
         <div className="bg-rose-600 text-white p-6 sm:p-8 rounded-3xl shadow-xl flex items-center justify-between gap-4">
           <div className="space-y-1.5">
@@ -31,7 +37,7 @@ export const EmergencyPage: React.FC = () => {
               Emergency Hub 🚨 24x7 Direct Helpline
             </h1>
             <p className="text-xs sm:text-sm text-rose-100 max-w-xl">
-              Tap any emergency button below to dial directly. No waiting or complex menus.
+              Tap any emergency button below to dial directly. Official contacts verified under Palghar District Administration.
             </p>
           </div>
         </div>

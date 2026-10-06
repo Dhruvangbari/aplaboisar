@@ -61,10 +61,12 @@ export const BusinessRegisterPage: React.FC = () => {
       category: category || 'General Business',
       subcategory: 'Local Provider',
       rating: 5.0,
-      reviewCount: 1,
+      reviewCount: 0,
+      reviewsAvailable: false,
       distance: '0.5 km',
       address: address || 'Station Road, Boisar',
       area: area || 'Boisar West',
+      pinCode: '401501',
       coordinates: { lat: 19.8028, lng: 72.7554 },
       phone: phone || '+91 98765 43210',
       whatsapp: whatsapp || '919876543210',
@@ -81,7 +83,12 @@ export const BusinessRegisterPage: React.FC = () => {
       isFeatured: false,
       isTrending: false,
       trendingScore: 50,
-      offersCount: 0
+      offersCount: 0,
+      source: 'Owner Submitted Self-Registration',
+      verifiedAt: new Date().toISOString(),
+      verificationStatus: 'listed',
+      verifiedBy: 'Pending Admin Verification Review',
+      isClaimed: true
     };
 
     setBusinesses(prev => [newBiz, ...prev]);

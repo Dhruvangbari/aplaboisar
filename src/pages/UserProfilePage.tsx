@@ -3,7 +3,7 @@ import { User, Phone, Mail, Award, Coins, Heart, LogOut, CheckCircle, ShieldChec
 import { useApp } from '../context/AppContext';
 
 export const UserProfilePage: React.FC = () => {
-  const { currentUser, setCurrentUser, showToast } = useApp();
+  const { currentUser, setCurrentUser, showToast, setIsAuthModalOpen } = useApp();
   const [name, setName] = useState(currentUser.name);
   const [phone, setPhone] = useState(currentUser.phone);
   const [email, setEmail] = useState(currentUser.email || '');
@@ -75,13 +75,36 @@ export const UserProfilePage: React.FC = () => {
               />
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 mt-6">
               <button
                 type="submit"
                 className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
               >
                 Save Changes
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Switch / Re-login Account
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete your AaplaBoisar account? All saved items and personal preferences will be permanently erased.')) {
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
             </div>
           </form>
         </div>

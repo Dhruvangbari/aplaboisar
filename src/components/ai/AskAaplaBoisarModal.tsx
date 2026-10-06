@@ -65,43 +65,77 @@ export const AskAaplaBoisarModal: React.FC = () => {
     let matchedS: ServiceItem[] = [];
     let replyText = '';
 
-    if (textLower.includes('restaurant') || textLower.includes('जेवण') || textLower.includes('हॉटेल') || textLower.includes('food') || textLower.includes('500')) {
-      matchedB = businesses.filter(b => b.category.includes('Food') || b.category.includes('Restaurants'));
+    if (textLower.includes('restaurant') || textLower.includes('जेवण') || textLower.includes('हॉटेल') || textLower.includes('food') || textLower.includes('500') || textLower.includes('thali')) {
+      matchedB = businesses.filter(b =>
+        b.category.toLowerCase().includes('food') ||
+        b.category.toLowerCase().includes('dining') ||
+        b.category.toLowerCase().includes('restaurant')
+      );
       replyText =
         language === 'mr'
-          ? 'मी तुमच्यासाठी बोईसरमधील सर्वोत्तम आणि बजेट-फ्रेंडली हॉटेल्स शोधली आहेत! खालील पर्याय तपासा:'
-          : 'Here are the top budget-friendly restaurants in Boisar with great coastal food!';
-    } else if (textLower.includes('job') || textLower.includes('iti') || textLower.includes('काम') || textLower.includes('नोकरी') || textLower.includes('salary')) {
-      matchedJ = jobs.filter(j => j.jobType.includes('ITI') || j.tags.some(t => t.toLowerCase().includes('iti')) || true).slice(0, 3);
+          ? 'मी तुमच्यासाठी बोईसरमधील पडताळणी केलेली आणि योग्य हॉटेल्स शोधली आहेत:'
+          : language === 'hi'
+          ? 'मैंने आपके लिए बोईसर में वेरिफाइड रेस्टोरेंट्स खोजे हैं:'
+          : 'Here are verified restaurants in Boisar matching your request:';
+    } else if (textLower.includes('job') || textLower.includes('iti') || textLower.includes('काम') || textLower.includes('नोकरी') || textLower.includes('salary') || textLower.includes('fresher') || textLower.includes('factory')) {
+      matchedJ = jobs.filter(j =>
+        textLower.includes('iti') ? j.jobType.includes('ITI') || j.qualification.includes('ITI') : true
+      );
       replyText =
         language === 'mr'
-          ? 'तारापूर एमआयडीसी आणि बोईसरमधील सध्या उपलब्ध असलेल्या नोकऱ्यांची यादी खालीलप्रमाणे आहे:'
-          : 'Found active job openings in Tarapur MIDC & Boisar matching your criteria:';
-    } else if (textLower.includes('bhk') || textLower.includes('flat') || textLower.includes('घर') || textLower.includes('भाड्याने') || textLower.includes('rent') || textLower.includes('10000')) {
-      matchedP = properties.filter(p => p.bedrooms.includes('1 BHK') || p.transactionType === 'Rent' || true).slice(0, 3);
+          ? 'तारापूर एमआयडीसी आणि बोईसरमधील सध्या उपलब्ध असलेल्या verified नोकऱ्यांची यादी:'
+          : language === 'hi'
+          ? 'तारापुर MIDC और बोईसर में सक्रिय वेरिफाइड जॉब्स:'
+          : 'Active verified job openings in Boisar & Tarapur MIDC:';
+    } else if (textLower.includes('bhk') || textLower.includes('flat') || textLower.includes('घर') || textLower.includes('भाड्याने') || textLower.includes('rent') || textLower.includes('10000') || textLower.includes('plot')) {
+      matchedP = properties.filter(p =>
+        textLower.includes('1 bhk') ? p.bedrooms.includes('1 BHK') : true
+      );
       replyText =
         language === 'mr'
-          ? 'बोईसरमधील ओस्तवाल एम्पायर व महावीर नगर भागातील 1 BHK फ्लॅट्स सापडले आहेत:'
-          : 'Found verified 1 BHK flats and rental properties in Boisar within your budget:';
-    } else if (textLower.includes('ac') || textLower.includes('repair') || textLower.includes('electrician') || textLower.includes('सर्व्हिस') || textLower.includes('दुरुस्त')) {
-      matchedS = services.slice(0, 3);
+          ? 'बोईसरमधील ओस्तवाल एम्पायर व इतर परिसरातील verified फ्लॅट्स आणि प्रॉपर्टीज:'
+          : 'Verified properties and flats in Boisar:';
+    } else if (textLower.includes('ac') || textLower.includes('repair') || textLower.includes('electrician') || textLower.includes('सर्व्हिस') || textLower.includes('दुरुस्त') || textLower.includes('plumber')) {
+      matchedS = services.filter(s =>
+        textLower.includes('ac') ? s.category.toLowerCase().includes('ac') : true
+      );
       replyText =
         language === 'mr'
-          ? 'बोईसरमध्ये 30 मिनिटांच्या आत उपलब्ध असलेले सत्यापित तंत्रज्ञ व कारागीर:'
-          : 'Here are verified technicians and home service providers available near you in Boisar:';
-    } else if (textLower.includes('hospital') || textLower.includes('emergency') || textLower.includes('डॉक्टर') || textLower.includes('दवाखाना')) {
-      matchedB = businesses.filter(b => b.category.includes('Doctors') || b.category.includes('Hospitals'));
+          ? 'बोईसरमध्ये उपलब्ध असलेले स्थानिक तंत्रज्ञ व कारागीर:'
+          : 'Verified local technicians and home service providers in Boisar:';
+    } else if (textLower.includes('hospital') || textLower.includes('emergency') || textLower.includes('डॉक्टर') || textLower.includes('दवाखाना') || textLower.includes('icu') || textLower.includes('ambulance')) {
+      matchedB = businesses.filter(b =>
+        b.category.toLowerCase().includes('hospital') ||
+        b.category.toLowerCase().includes('medical')
+      );
       replyText =
         language === 'mr'
-          ? 'आपत्कालीन 24x7 रुग्णालय व वैद्यकीय सेवा:'
-          : '24x7 Emergency hospitals & trauma care centers in Boisar:';
+          ? 'बोईसर व बेटेगाव परिसरातील २४ तास आपत्कालीन व मल्टिस्पेशालिटी हॉस्पिटल्स:'
+          : '24x7 Emergency hospitals & healthcare facilities in Boisar:';
     } else {
-      matchedB = businesses.slice(0, 2);
-      matchedJ = jobs.slice(0, 1);
-      replyText =
-        language === 'mr'
-          ? `तुमच्या "${userText}" या शोधाशी संबंधित बोईसरमधील व्यवसाय आणि नोकऱ्या खाली दिल्या आहेत:`
-          : `Here are matching recommendations for "${userText}" in Boisar:`;
+      // Freeform search in business names or categories
+      const directMatches = businesses.filter(b =>
+        b.name.toLowerCase().includes(textLower) ||
+        b.tagline.toLowerCase().includes(textLower) ||
+        b.category.toLowerCase().includes(textLower) ||
+        b.area.toLowerCase().includes(textLower)
+      );
+
+      if (directMatches.length > 0) {
+        matchedB = directMatches;
+        replyText =
+          language === 'mr'
+            ? `तुमच्या शोधाशी संबंधित बोईसरमधील verified माहिती सापडली:`
+            : `Verified results for "${userText}" in Boisar:`;
+      } else {
+        // Strict grounding fallback rule (Requirement 35)
+        replyText =
+          language === 'mr'
+            ? 'मला सध्या योग्य verified listing सापडली नाही.'
+            : language === 'hi'
+            ? 'मुझे वर्तमान में कोई उपयुक्त verified listing नहीं मिली।'
+            : 'No matching verified listing found in Boisar at this moment.';
+      }
     }
 
     const aiMsg: Message = {

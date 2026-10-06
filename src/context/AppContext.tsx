@@ -70,6 +70,8 @@ interface AppContextType {
   setIsProfileDrawerOpen: (open: boolean) => void;
   isAskAiOpen: boolean;
   setIsAskAiOpen: (open: boolean) => void;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
   toast: { message: string; type: 'success' | 'info' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   hideToast: () => void;
@@ -120,6 +122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => currentUser.savedItemIds || []);
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
   const [isAskAiOpen, setIsAskAiOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -308,6 +311,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsProfileDrawerOpen,
         isAskAiOpen,
         setIsAskAiOpen,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
         toast,
         showToast,
         hideToast
@@ -325,3 +330,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+export const useAppContext = useApp;

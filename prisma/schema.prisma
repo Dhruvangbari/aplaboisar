@@ -1,0 +1,891 @@
+// ==============================================================
+// AaplaBoisar (आपलं Boisar) — Production Database Schema
+// Database Engine: PostgreSQL
+// Primary Location Focus: Boisar, Palghar (PIN 401501)
+// ==============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------------------------
+// ENUMS
+// --------------------------------------------------------------
+
+enum Role {
+  USER
+  BUSINESS_OWNER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum TrustBadge {
+  LISTED
+  VERIFIED
+  TRUSTED
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+  GOLD
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  EXPIRED
+}
+
+enum LeadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  CONVERTED
+  LOST
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  ITI_JOBS
+  FRESHER_JOBS
+  URGENT_HIRING
+  APPRENTICESHIP
+}
+
+enum PropertyType {
+  FLAT
+  PLOT
+  SHOP
+  COMMERCIAL
+  RESIDENTIAL
+  PG_HOSTEL
+}
+
+enum TransactionType {
+  BUY
+  RENT
+  SELL
+}
+
+enum AdPlacement {
+  HOMEPAGE_HERO
+  CATEGORY_TOP
+  SEARCH_RESULTS
+  FEATURED_SIDEBAR
+}
+
+enum AdStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  PAUSED
+  COMPLETED
+  REJECTED
+}
+
+// --------------------------------------------------------------
+// 1. USERS & PROFILES
+// --------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
+  passwordHash  String?
+  name          String
+  avatarUrl     String?
+  role          Role      @default(USER)
+  isVerified    Boolean   @default(false)
+  preferredLang String    @default("mr") // 'mr' | 'en' | 'hi'
+  pointsBalance Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile           UserProfile?
+  businesses        Business[]
+  reviews           BusinessReview[]
+  favourites        BusinessFavourite[]
+  recentViews       BusinessRecentView[]
+  enquiries         BusinessEnquiry[]
+  claims            BusinessClaim[]
+  reports           BusinessReport[]
+  jobApplications   JobApplication[]
+  propertyEnquiries PropertyEnquiry[]
+  serviceRequests   ServiceRequest[]
+  eventTickets      EventTicket[]
+  localPosts        LocalPost[]
+  rewardTxs         RewardTransaction[]
+  notifications     Notification[]
+  payments          PaymentTransaction[]
+  savedSearches     SavedSearch[]
+  adminActions      AdminAction[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address          String?
+  area             String?
+  pinCode          String?  @default("401501")
+  locationLat      Float?
+  locationLng      Float?
+  allowPush        Boolean  @default(true)
+  allowLocation    Boolean  @default(true)
+  referralCode     String   @unique @default(cuid())
+  referredById     String?
+  bio              String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+// --------------------------------------------------------------
+// 2. BUSINESS DIRECTORY & INGESTION
+// --------------------------------------------------------------
+
+model Business {
+  id                 String             @id @default(cuid())
+  slug               String             @unique
+  ownerId            String?
+  owner              User?              @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  name               String
+  marathiName        String?
+  tagline            String?
+  categoryId         String
+  category           BusinessCategory   @relation(fields: [categoryId], references: [id])
+  subcategoryId      String?
+  subcategory        BusinessSubcategory? @relation(fields: [subcategoryId], references: [id])
+  phone              String?
+  whatsapp           String?
+  email              String?
+  website            String?
+  priceRange         String?            @default("₹₹")
+  trustBadge         TrustBadge         @default(LISTED)
+  subscriptionTier   SubscriptionTier   @default(FREE)
+  isFeatured         Boolean            @default(false)
+  isTrending         Boolean            @default(false)
+  trendingScore      Float              @default(0.0)
+
+  // Real Data Verification Tracking (Section 2 & 52)
+  source             String             @default("Public Directory / Self-Registered")
+  sourceUrl          String?
+  verifiedAt         DateTime?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedBy         String?
+  infoNeedsReview    Boolean            @default(false)
+  lastConfirmedAt    DateTime?
+
+  about              String             @db.Text
+  coverImageUrl      String?
+  logoUrl            String?
+  viewsCount         Int                @default(0)
+  callClicksCount    Int                @default(0)
+  whatsappClicksCount Int               @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  locations          BusinessLocation[]
+  photos             BusinessPhoto[]
+  hours              BusinessHour[]
+  services           BusinessService[]
+  products           BusinessProduct[]
+  paymentMethods     BusinessPaymentMethod[]
+  socialLinks        BusinessSocialLink[]
+  reviews            BusinessReview[]
+  favourites         BusinessFavourite[]
+  recentViews        BusinessRecentView[]
+  enquiries          BusinessEnquiry[]
+  leads              BusinessLead[]
+  claims             BusinessClaim[]
+  reports            BusinessReport[]
+  analytics          BusinessAnalytics[]
+  offers             Offer[]
+  adCampaigns        AdvertisementCampaign[]
+  subscriptions      Subscription[]
+
+  @@index([categoryId])
+  @@index([trustBadge])
+  @@index([subscriptionTier])
+  @@map("businesses")
+}
+
+model BusinessCategory {
+  id             String                @id @default(cuid())
+  name           String                @unique
+  marathiName    String
+  slug           String                @unique
+  iconName       String
+  bgGradient     String?
+  displayOrder   Int                   @default(0)
+  businesses     Business[]
+  subcategories  BusinessSubcategory[]
+
+  @@map("business_categories")
+}
+
+model BusinessSubcategory {
+  id             String           @id @default(cuid())
+  categoryId     String
+  category       BusinessCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name           String
+  marathiName    String
+  slug           String
+  businesses     Business[]
+
+  @@unique([categoryId, slug])
+  @@map("business_subcategories")
+}
+
+model BusinessLocation {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  addressLine  String
+  area         String    // e.g. 'Boisar West', 'Tarapur MIDC', 'Betegaon'
+  landmark     String?
+  city         String    @default("Boisar")
+  district     String    @default("Palghar")
+  pinCode      String    @default("401501")
+  latitude     Float
+  longitude    Float
+  isPrimary    Boolean   @default(true)
+
+  @@index([area])
+  @@index([pinCode])
+  @@map("business_locations")
+}
+
+model BusinessPhoto {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url          String
+  caption      String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@map("business_photos")
+}
+
+model BusinessHour {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int       // 0 = Sunday, 1 = Monday ... 6 = Saturday
+  openTime     String    // '10:00 AM'
+  closeTime    String    // '09:00 PM'
+  isClosed     Boolean   @default(false)
+
+  @@map("business_hours")
+}
+
+model BusinessService {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  marathiName  String?
+  description  String?
+  price        String?
+  createdAt    DateTime  @default(now())
+
+  @@map("business_services")
+}
+
+model BusinessProduct {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  price        Decimal?  @db.Decimal(10, 2)
+  imageUrl     String?
+  isAvailable  Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  @@map("business_products")
+}
+
+model BusinessPaymentMethod {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  methodName   String    // 'UPI', 'Google Pay', 'Cash', 'Credit Card'
+
+  @@map("business_payment_methods")
+}
+
+model BusinessSocialLink {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform     String    // 'instagram', 'facebook', 'youtube', 'x'
+  url          String
+
+  @@map("business_social_links")
+}
+
+// --------------------------------------------------------------
+// 3. REVIEWS, CLAIMS & CRM LEADS
+// --------------------------------------------------------------
+
+model BusinessReview {
+  id                String    @id @default(cuid())
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating            Int       // 1 - 5 stars
+  comment           String    @db.Text
+  isVerifiedCustomer Boolean  @default(false)
+  ownerReply        String?   @db.Text
+  repliedAt         DateTime?
+  status            String    @default("APPROVED") // 'PENDING' | 'APPROVED' | 'FLAGGED'
+  createdAt         DateTime  @default(now())
+
+  photos            BusinessReviewPhoto[]
+
+  @@unique([businessId, userId]) // 1 review per user
+  @@map("business_reviews")
+}
+
+model BusinessReviewPhoto {
+  id         String         @id @default(cuid())
+  reviewId   String
+  review     BusinessReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  url        String
+
+  @@map("business_review_photos")
+}
+
+model BusinessFavourite {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+
+  @@unique([businessId, userId])
+  @@map("business_favourites")
+}
+
+model BusinessRecentView {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewedAt   DateTime  @default(now())
+
+  @@map("business_recent_views")
+}
+
+model BusinessEnquiry {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name       String
+  phone      String
+  message    String    @db.Text
+  status     String    @default("NEW")
+  createdAt  DateTime  @default(now())
+
+  @@map("business_enquiries")
+}
+
+model BusinessLead {
+  id               String       @id @default(cuid())
+  businessId       String
+  business         Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerName     String
+  customerPhone    String
+  serviceRequested String
+  message          String       @db.Text
+  priority         LeadPriority @default(MEDIUM)
+  status           LeadStatus   @default(NEW)
+  aiExplanation    String?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@map("business_leads")
+}
+
+model BusinessClaim {
+  id            String             @id @default(cuid())
+  businessId    String
+  business      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  claimantName  String
+  claimantPhone String
+  proofDocUrl   String?
+  status        VerificationStatus @default(PENDING_REVIEW)
+  adminNotes    String?
+  createdAt     DateTime           @default(now())
+  reviewedAt    DateTime?
+
+  @@map("business_claims")
+}
+
+model BusinessReport {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reason     String
+  details    String?
+  createdAt  DateTime  @default(now())
+
+  @@map("business_reports")
+}
+
+model BusinessAnalytics {
+  id             String    @id @default(cuid())
+  businessId     String
+  business       Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  date           DateTime  @db.Date
+  views          Int       @default(0)
+  searches       Int       @default(0)
+  calls          Int       @default(0)
+  whatsappClicks Int       @default(0)
+  directions     Int       @default(0)
+  enquiries      Int       @default(0)
+
+  @@unique([businessId, date])
+  @@map("business_analytics")
+}
+
+// --------------------------------------------------------------
+// 4. OFFERS, JOBS & REAL ESTATE
+// --------------------------------------------------------------
+
+model Offer {
+  id             String            @id @default(cuid())
+  businessId     String
+  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  discountText   String            // e.g. '20% OFF'
+  couponCode     String            @unique
+  originalPrice  Decimal?          @db.Decimal(10, 2)
+  discountPrice  Decimal?          @db.Decimal(10, 2)
+  validFrom      DateTime          @default(now())
+  validUntil     DateTime
+  terms          String?
+  claimsCount    Int               @default(0)
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  redemptions    OfferRedemption[]
+
+  @@map("offers")
+}
+
+model OfferRedemption {
+  id         String    @id @default(cuid())
+  offerId    String
+  offer      Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  userId     String
+  claimedAt  DateTime  @default(now())
+
+  @@map("offer_redemptions")
+}
+
+model Job {
+  id            String           @id @default(cuid())
+  title         String
+  companyName   String
+  companyLogo   String?
+  category      String
+  jobType       JobType          @default(FULL_TIME)
+  location      String           // e.g. 'Tarapur MIDC, Boisar'
+  area          String           @default("Tarapur MIDC")
+  pinCode       String           @default("401506")
+  salaryRange   String
+  shift         String
+  experience    String
+  qualification String
+  isUrgent      Boolean          @default(false)
+  isDemo        Boolean          @default(false) // Marked DEMO if unverified vacancy (Section 26)
+  description   String           @db.Text
+  contactPhone  String
+  contactWhatsapp String
+  expiresAt     DateTime?
+  createdAt     DateTime         @default(now())
+  applications  JobApplication[]
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id          String    @id @default(cuid())
+  jobId       String
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeUrl   String?
+  coverNote   String?
+  appliedAt   DateTime  @default(now())
+
+  @@map("job_applications")
+}
+
+model Property {
+  id              String            @id @default(cuid())
+  title           String
+  transactionType TransactionType   @default(BUY)
+  propertyType    PropertyType      @default(FLAT)
+  priceAmount     Decimal           @db.Decimal(12, 2)
+  priceDisplay    String            // '₹19.5 Lakhs'
+  location        String            // 'Ostwal Empire, Boisar West'
+  areaName        String            @default("Boisar West")
+  pinCode         String            @default("401501")
+  carpetAreaSqFt  Int
+  bedrooms        String            // '1 BHK', '2 BHK', 'Shop'
+  bathrooms       Int               @default(1)
+  isVerified      Boolean           @default(false)
+  isDemo          Boolean           @default(false)
+  description     String            @db.Text
+  contactPhone    String
+  contactWhatsapp String
+  latitude        Float?
+  longitude       Float?
+  createdAt       DateTime          @default(now())
+  images          PropertyImage[]
+  enquiries       PropertyEnquiry[]
+
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         String    @id @default(cuid())
+  propertyId String
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String
+  displayOrder Int     @default(0)
+
+  @@map("property_images")
+}
+
+model PropertyEnquiry {
+  id         String    @id @default(cuid())
+  propertyId String
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name       String
+  phone      String
+  message    String?
+  createdAt  DateTime  @default(now())
+
+  @@map("property_enquiries")
+}
+
+// --------------------------------------------------------------
+// 5. SERVICES, EVENTS, COMMUNITY & TRANSPORT
+// --------------------------------------------------------------
+
+model ServiceProvider {
+  id            String           @id @default(cuid())
+  name          String
+  skillCategory String           // 'Electrician', 'Plumber', 'AC Repair'
+  phone         String
+  whatsapp      String
+  area          String           @default("Boisar")
+  startingPrice String
+  isVerified    Boolean          @default(false)
+  rating        Float            @default(4.8)
+  requests      ServiceRequest[]
+
+  @@map("service_providers")
+}
+
+model ServiceRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId  String?
+  provider    ServiceProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  category    String
+  address     String
+  phone       String
+  description String?
+  status      String           @default("PENDING")
+  createdAt   DateTime         @default(now())
+
+  @@map("service_requests")
+}
+
+model Event {
+  id           String              @id @default(cuid())
+  title        String
+  category     String
+  organizer    String
+  dateDisplay  String
+  timeDisplay  String
+  venue        String
+  ticketPrice  String
+  seatsTotal   Int
+  seatsLeft    Int
+  coverImage   String?
+  description  String              @db.Text
+  createdAt    DateTime            @default(now())
+  tickets      EventTicket[]
+
+  @@map("events")
+}
+
+model EventTicket {
+  id          String    @id @default(cuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketCount Int       @default(1)
+  bookedAt    DateTime  @default(now())
+
+  @@map("event_tickets")
+}
+
+model LocalPost {
+  id            String    @id @default(cuid())
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content       String    @db.Text
+  imageUrl      String?
+  category      String    @default("Life in Boisar")
+  likesCount    Int       @default(0)
+  commentsCount Int       @default(0)
+  isModerated   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@map("local_posts")
+}
+
+model LostFound {
+  id          String    @id @default(cuid())
+  type        String    // 'LOST' | 'FOUND'
+  itemCategory String   // 'Mobile', 'Wallet', 'Keys', 'Documents', 'Pets'
+  title       String
+  location    String
+  dateString  String
+  description String    @db.Text
+  contactName String
+  contactPhone String   // Masked on public views for privacy (Section 31 & 54)
+  imageUrl    String?
+  isResolved  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@map("lost_found")
+}
+
+model TransportRoute {
+  id            String    @id @default(cuid())
+  type          String    // 'Auto Stand', 'Shared Cab', 'Express Shuttle'
+  title         String
+  routeSummary  String
+  contactPhone  String
+  timings       String
+  fareEstimate  String
+  isVerified    Boolean   @default(true)
+
+  @@map("transport")
+}
+
+model EmergencyContact {
+  id          String    @id @default(cuid())
+  category    String    // 'Ambulance', 'Hospitals', 'Police', 'Fire Brigade', 'Blood'
+  name        String
+  phone       String
+  altPhone    String?
+  address     String
+  is24x7      Boolean   @default(true)
+  isOfficial  Boolean   @default(true) // Section 28 verification rule
+
+  @@map("emergency_contacts")
+}
+
+// --------------------------------------------------------------
+// 6. REWARDS, SUBSCRIPTIONS & RAZORPAY PAYMENTS
+// --------------------------------------------------------------
+
+model RewardItem {
+  id           String    @id @default(cuid())
+  title        String
+  businessName String
+  pointsCost   Int
+  discountValue String
+  couponCode   String
+  validityDays Int       @default(30)
+  isActive     Boolean   @default(true)
+
+  @@map("rewards")
+}
+
+model RewardTransaction {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsAmount Int
+  type         String    // 'EARNED' | 'REDEEMED'
+  activityDesc String
+  createdAt    DateTime  @default(now())
+
+  @@map("reward_transactions")
+}
+
+model SubscriptionPlan {
+  id          String           @id @default(cuid())
+  tier        SubscriptionTier @unique
+  name        String
+  monthlyPrice Decimal         @db.Decimal(10, 2)
+  features    String[]
+  isActive    Boolean          @default(true)
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id           String             @id @default(cuid())
+  businessId   String
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tier         SubscriptionTier   @default(FREE)
+  status       SubscriptionStatus @default(ACTIVE)
+  startDate    DateTime           @default(now())
+  endDate      DateTime?
+  autoRenew    Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+
+  @@map("subscriptions")
+}
+
+model PaymentTransaction {
+  id                 String        @id @default(cuid())
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productType        String        // 'SUBSCRIPTION_PREMIUM', 'SUBSCRIPTION_GOLD', 'AD_BANNER', 'REEL_PROMO'
+  amountInPaise      Int
+  currency           String        @default("INR")
+  gateway            String        @default("RAZORPAY")
+  razorpayOrderId    String        @unique
+  razorpayPaymentId  String?       @unique
+  razorpaySignature  String?
+  status             PaymentStatus @default(PENDING)
+  invoiceNumber      String?       @unique
+  gstAmount          Decimal?      @db.Decimal(10, 2)
+  isTestMode         Boolean       @default(true) // Section 64 TEST PAYMENT
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@map("payment_transactions")
+}
+
+model AdvertisementCampaign {
+  id           String       @id @default(cuid())
+  businessId   String
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title        String
+  placement    AdPlacement  @default(HOMEPAGE_HERO)
+  durationDays Int
+  amountPaid   Decimal      @db.Decimal(10, 2)
+  status       AdStatus     @default(PENDING_APPROVAL)
+  impressions  Int          @default(0)
+  clicks       Int          @default(0)
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@map("advertisement_campaigns")
+}
+
+model ReelPromotion {
+  id           String       @id @default(cuid())
+  businessId   String
+  reelsCount   Int          @default(1)
+  amountPaid   Decimal      @db.Decimal(10, 2)
+  videoUrl     String
+  views        Int          @default(0)
+  status       AdStatus     @default(PENDING_APPROVAL)
+  createdAt    DateTime     @default(now())
+
+  @@map("reel_promotions")
+}
+
+model SavedSearch {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query      String
+  category   String?
+  area       String?
+  createdAt  DateTime  @default(now())
+
+  @@map("saved_searches")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  message    String
+  type       String    // 'LEAD', 'PAYMENT', 'OFFER', 'REVIEW', 'ALERT'
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@map("notifications")
+}
+
+model AdminAction {
+  id         String    @id @default(cuid())
+  adminId    String
+  admin      User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  actionType String    // 'VERIFY_BUSINESS', 'APPROVE_AD', 'RESOLVE_CLAIM', 'MODERATE_POST'
+  targetId   String
+  details    String?
+  createdAt  DateTime  @default(now())
+
+  @@map("admin_actions")
+}

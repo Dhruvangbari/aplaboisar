@@ -7,6 +7,8 @@ import { Footer } from './components/layout/Footer';
 import { MobileDrawer } from './components/layout/MobileDrawer';
 import { Toast } from './components/common/Toast';
 import { AskAaplaBoisarModal } from './components/ai/AskAaplaBoisarModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { useApp } from './context/AppContext';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -37,6 +39,7 @@ import { AdminPanelPage } from './pages/admin/AdminPanelPage';
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const { isAuthModalOpen, setIsAuthModalOpen } = useApp();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -48,6 +51,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {!isAdminRoute && <BottomNav />}
       <MobileDrawer />
       <AskAaplaBoisarModal />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       <Toast />
     </div>
   );

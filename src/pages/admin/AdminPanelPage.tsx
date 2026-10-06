@@ -413,10 +413,71 @@ export const AdminPanelPage: React.FC = () => {
               Business Moderation & Verification 🛡️
             </h1>
             <p className="text-xs text-slate-400">
-              Manage Trust Badges (🟢 Listed, 🔵 Verified, 🟡 Trusted) & approvals.
+              Manage Trust Badges (🟢 Listed, 🔵 Verified, 🟡 Trusted), review ownership claim requests, and moderate real Boisar data.
             </p>
 
+            {/* Claims Queue Section (Requirement 18 & 19) */}
+            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-400" />
+                  <h3 className="font-bold text-sm text-white">Owner Listing Claims Verification Queue</h3>
+                </div>
+                <span className="text-xs font-mono font-bold bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20">
+                  {JSON.parse(localStorage.getItem('aplaboisar_business_claims') || '[]').length} Pending Requests
+                </span>
+              </div>
+
+              {JSON.parse(localStorage.getItem('aplaboisar_business_claims') || '[]').length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-900/60 text-center text-xs text-slate-500">
+                  No pending ownership claims in queue. All Boisar listings verified.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {JSON.parse(localStorage.getItem('aplaboisar_business_claims') || '[]').map((claim: any) => (
+                    <div key={claim.id} className="p-3.5 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div>
+                        <div className="font-bold text-white text-sm">{claim.businessName}</div>
+                        <div className="text-slate-400 mt-0.5">
+                          Claimed by <span className="text-amber-300 font-semibold">{claim.claimantName}</span> ({claim.relationship}) • {claim.claimantPhone}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          Proof: {claim.proofType} {claim.documentNumber ? `(#${claim.documentNumber})` : ''}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const claims = JSON.parse(localStorage.getItem('aplaboisar_business_claims') || '[]');
+                            const updated = claims.filter((c: any) => c.id !== claim.id);
+                            localStorage.setItem('aplaboisar_business_claims', JSON.stringify(updated));
+                            showToast(`Claim approved for ${claim.businessName}! Business dashboard unlocked for owner.`, 'success');
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
+                        >
+                          Approve Claim
+                        </button>
+                        <button
+                          onClick={() => {
+                            const claims = JSON.parse(localStorage.getItem('aplaboisar_business_claims') || '[]');
+                            const updated = claims.filter((c: any) => c.id !== claim.id);
+                            localStorage.setItem('aplaboisar_business_claims', JSON.stringify(updated));
+                            showToast(`Claim rejected for ${claim.businessName}.`, 'info');
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-400 font-bold rounded-lg transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-3">
+              <h3 className="font-bold text-sm text-white pt-2">All Boisar Registered Listings</h3>
               {businesses.map(b => (
                 <div
                   key={b.id}

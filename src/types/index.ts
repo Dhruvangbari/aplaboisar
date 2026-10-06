@@ -26,10 +26,12 @@ export interface BusinessItem {
   subcategory: string;
   rating: number;
   reviewCount: number;
+  reviewsAvailable?: boolean;
   distance: string;
   address: string;
   landmark?: string;
   area: string;
+  pinCode?: string;
   coordinates: { lat: number; lng: number };
   phone: string;
   whatsapp: string;
@@ -52,6 +54,58 @@ export interface BusinessItem {
   viewsCount?: number;
   callsCount?: number;
   enquiriesCount?: number;
+  // Verification & Provenance (Strict Real-Data Architecture)
+  source?: string;
+  sourceUrl?: string;
+  verifiedAt?: string;
+  verificationStatus?: 'listed' | 'verified' | 'trusted';
+  verifiedBy?: string;
+  isClaimed?: boolean;
+  claimedBy?: string;
+  isDemo?: boolean;
+  unverifiedFields?: string[];
+  lastConfirmedAt?: string;
+}
+
+export interface BusinessClaimRequest {
+  id: string;
+  businessId: string;
+  businessName: string;
+  claimantName: string;
+  claimantPhone: string;
+  claimantEmail: string;
+  relationship: 'Owner' | 'Partner' | 'Manager' | 'Authorized Representative';
+  proofType: 'GSTIN Certificate' | 'Shop Act / Gumasta' | 'Electricity Bill' | 'Business Card' | 'Phone OTP';
+  documentNumber?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  submittedAt: string;
+  notes?: string;
+}
+
+export interface PaymentOrder {
+  id: string;
+  orderId: string;
+  amount: number;
+  currency: 'INR';
+  productType: 'SUBSCRIPTION' | 'ADVERTISEMENT' | 'REEL_PROMOTION' | 'EVENT_TICKET';
+  productName: string;
+  planId?: string;
+  businessId?: string;
+  userId: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+  paymentId?: string;
+  signature?: string;
+  isTestMode: boolean;
+  invoiceNumber?: string;
+  createdAt: string;
+  customerDetails: {
+    name: string;
+    email: string;
+    phone: string;
+    businessName?: string;
+    gstin?: string;
+    address?: string;
+  };
 }
 
 export interface IconicPlace {
